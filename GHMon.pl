@@ -40,6 +40,7 @@ my $client = RyzomAPI->new();
 
 			if (!$cached_guild || $cached_guild->cached_until < $tick) {
 				# refresh
+				logger "refreshing cache";
 				($error, $cache{$apikey}) = $client->guild($apikey);
 			}
 		}
@@ -97,9 +98,10 @@ get '/:apikey/inventory' => sub {
 	else {
 		my $items = $guild->room;
 		$str .= "<p>";
-		for (@$items) {
-			my $url = $client->item_icon($_);
-			$str .= "<img src='$url' alt='icon'>\n";
+		for (sort { $a->sheet cmp $b->sheet } @$items) {
+			my $title = $_->sheet;
+			my $url   = $client->item_icon($_);
+			$str .= "<img src='$url' alt='icon' title='$title'>\n";
 		}
 		$str .= "</p>";
 	}
