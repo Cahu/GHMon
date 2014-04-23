@@ -134,6 +134,17 @@ unless (-r $CACHE and -w $CACHE) {
 }
 
 
+get '/' => sub {
+	my $str = ""
+		. $HEADER
+		. "Usage: http://server.bla.bla/[guild api key]"
+		. $FOOTER
+	;
+
+	return $str;
+};
+
+
 get '/:apikey' => sub {
 	my $apikey = param('apikey');
 
