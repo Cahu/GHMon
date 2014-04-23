@@ -111,10 +111,29 @@ get '/:apikey/inventory' => sub {
 	return $str;
 };
 
+dance;
+
+
+sub item_filter {
+	my ($list_ref, $filter_regex) = @_;
+
+	my @res =
+		sort { $a->sheet cmp $b->sheet }
+		grep { $_->sheet =~ /$filter_regex/ } @$list_ref;
+
+	my $str = "";
+
+	for (@res) {
+		my $title = $_->sheet;
+		my $uri   = $client->item_icon($_);
+
+		$str .= "<img src='$uri' alt='$title' title='$title'>\n";
+	}
+
+	return $str;
+}
 
 sub dump_pre {
 	my ($var) = @_;
 	my $str = "<pre>" . Dumper($var) . "</pre>";
 }
-
-dance;
