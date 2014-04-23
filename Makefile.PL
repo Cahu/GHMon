@@ -9,9 +9,8 @@ $eumm_version =~ s/_//;
 
 WriteMakefile(
 	NAME                => 'GHMon',
-	AUTHOR              => q{YOUR NAME <youremail@example.com>},
+	AUTHOR              => q{cahu <cahu@gmx.us>},
 	VERSION_FROM        => 'lib/GHMon.pm',
-	ABSTRACT            => 'YOUR APPLICATION ABSTRACT',
 	($eumm_version >= 6.3001
 		? ('LICENSE'=> 'perl')
 		: ()),
