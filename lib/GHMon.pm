@@ -199,7 +199,7 @@ get '/:apikey/inventory/items' => sub {
 	if ($guild) {
 		my $items = $guild->room;
 		$str .= "<p>\n";
-		$str .= item_filter($apikey, $items, qr/^i/);
+		$str .= item_filter(request->host, $apikey, $items, qr/^i/);
 		$str .= "</p>\n";
 	} else {
 		$str .= "Error retrieving guild from cache."
@@ -228,7 +228,7 @@ get '/:apikey/inventory/mats' => sub {
 	if ($guild) {
 		my $items = $guild->room;
 		$str .= "<p>\n";
-		$str .= item_filter($apikey, $items, qr/^m/);
+		$str .= item_filter(request->host, $apikey, $items, qr/^m/);
 		$str .= "</p>\n";
 	} else {
 		$str .= "Error retrieving guild from cache."
@@ -257,7 +257,7 @@ get '/:apikey/inventory/rp' => sub {
 	if ($guild) {
 		my $items = $guild->room;
 		$str .= "<p>\n";
-		$str .= item_filter($apikey, $items, qr/^rp/);
+		$str .= item_filter(request->host, $apikey, $items, qr/^rp/);
 		$str .= "</p>\n";
 	} else {
 		$str .= "Error retrieving guild from cache."
@@ -268,7 +268,7 @@ get '/:apikey/inventory/rp' => sub {
 
 
 sub item_filter {
-	my ($apikey, $list_ref, $filter_regex) = @_;
+	my ($host, $apikey, $list_ref, $filter_regex) = @_;
 
 	my @res =
 		sort { $a->sheet cmp $b->sheet }
@@ -278,7 +278,7 @@ sub item_filter {
 
 	for (@res) {
 		my $title = $_->sheet;
-		my $uri   = "http://127.0.0.1:3000/$CACHE/$apikey/" . sheet_to_name($_);
+		my $uri   = "http://$host/$CACHE/$apikey/" . sheet_to_name($_);
 
 		$str .= "<img src='$uri' alt='$title' title='$title'>\n";
 	}
