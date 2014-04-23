@@ -47,12 +47,13 @@ my $client = RyzomAPI->new();
 
 			if (!$cached_guild || $cached_guild->cached_until < $tick) {
 				# refresh
-				logger "refreshing cache";
+				info "Refreshing cache";
 				($error, $cache{$apikey}) = $client->guild($apikey);
 			}
 		}
 
 		else {
+			info "Initializing cache";
 			($error, $cache{$apikey}) = $client->guild($apikey);
 		}
 
