@@ -1,4 +1,5 @@
 use Dancer;
+use Dancer::Logger::Console;
 
 use RyzomAPI;
 use Data::Dumper;
@@ -20,6 +21,12 @@ my $FOOTER = <<HTML;
 </html> 
 HTML
 
+
+set 'logger'       => 'console';
+set 'log'          => 'debug';
+set 'show_errors'  => 1;
+set 'startup_info' => 1;
+set 'warnings'     => 1;
 
 my $client = RyzomAPI->new();
 
