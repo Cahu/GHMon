@@ -1,10 +1,17 @@
-use Dancer;
+package GHMon;
+
+use Dancer qw(:syntax);
 use Dancer::Logger::Console;
 
 use RyzomAPI;
+use LWP::Simple qw(!get);
+
 use Data::Dumper;
 
+
 my $TITLE = "GHMon";
+my $CACHE = "cache";
+
 
 my $HEADER = <<HTML;
 <!DOCTYPE html>
@@ -37,7 +44,7 @@ my $client = RyzomAPI->new();
 	sub get_guild {
 		my ($apikey) = @_;
 
-		my $error;
+		my $guild;
 
 		if ($cache{$apikey}) {
 			my $time = $client->time;
@@ -46,20 +53,86 @@ my $client = RyzomAPI->new();
 			my $cached_guild = $cache{$apikey};
 
 			if (!$cached_guild || $cached_guild->cached_until < $tick) {
-				# refresh
-				info "Refreshing cache";
-				($error, $cache{$apikey}) = $client->guild($apikey);
+				info "Refreshing cache for key: $apikey";
+				$guild = refresh_cache($apikey);
+
+				if ($guild) {
+					$cache{$apikey} = $guild;
+					info "Cache update for key $apikey done";
+				} else {
+					$cache{$apikey} = undef;
+					warning "Cache update for key $apikey failed";
+				}
+			}
+			
+			else {
+				$guild = $cached_guild;
 			}
 		}
 
 		else {
-			info "Initializing cache";
-			($error, $cache{$apikey}) = $client->guild($apikey);
+			info "Initializing cache for key: $apikey";
+			$guild = refresh_cache($apikey);
+
+			if ($guild) {
+				$cache{$apikey} = $guild;
+				info "Cache creation for key $apikey done";
+			} else {
+				warning "Cache creation for key $apikey failed";
+			}
 		}
 
-		return ($error, $cache{$apikey});
+
+		return $guild;
 	}
+
+	sub refresh_cache {
+		my ($apikey) = @_;
+
+		my ($error, $guild) = $client->guild($apikey);
+
+		if (! $error) {
+			my $dir = "public/$CACHE/$apikey";
+
+			unless (-d $dir) {
+				unless (mkdir $dir) {
+					warn "Couldn't create cache dir for key $apikey";
+					return undef;
+				}
+			}
+
+			unless (-r $dir and -w $dir) {
+				warn "Couldn't access cache dir for key $apikey";
+				return undef;
+			}
+
+			for my $item (@{ $guild->room }) {
+				;
+				#getstore(
+				#	$client->item_icon($item),
+				#	$dir . "/" . sheet_to_name($item)
+				#);
+			}
+		}
+		
+		else {
+			warning Dumper($guild);
+		}
+
+		return $guild;
+	}
+
 }
+
+
+unless (-d $CACHE) {
+	mkdir $CACHE or die "Can't create cache dir: $!";
+}
+
+unless (-r $CACHE and -w $CACHE) {
+	die "Can't access cache dir";
+}
+
 
 get '/:apikey' => sub {
 	my $apikey = param('apikey');
@@ -100,7 +173,7 @@ get '/:apikey/inventory' => sub {
 
 get '/:apikey/inventory/items' => sub {
 	my $apikey = param('apikey');
-	my ($error, $guild) = get_guild($apikey);
+	my $guild = get_guild($apikey);
 
 	my $str = ""
 		. $HEADER
@@ -115,13 +188,13 @@ get '/:apikey/inventory/items' => sub {
 		. "</ul>\n"
 	;
 
-	if ($error) {
-		$str .= dump_pre($error)
-	} else {
+	if ($guild) {
 		my $items = $guild->room;
 		$str .= "<p>\n";
-		$str .= item_filter($items, qr/^i/);
+		$str .= item_filter($apikey, $items, qr/^i/);
 		$str .= "</p>\n";
+	} else {
+		$str .= "Error retrieving guild from cache."
 	}
 
 	return $str;
@@ -129,7 +202,7 @@ get '/:apikey/inventory/items' => sub {
 
 get '/:apikey/inventory/mats' => sub {
 	my $apikey = param('apikey');
-	my ($error, $guild) = get_guild($apikey);
+	my $guild = get_guild($apikey);
 
 	my $str = ""
 		. $HEADER
@@ -144,13 +217,13 @@ get '/:apikey/inventory/mats' => sub {
 		. "</ul>\n"
 	;
 
-	if ($error) {
-		$str .= dump_pre($error)
-	} else {
+	if ($guild) {
 		my $items = $guild->room;
 		$str .= "<p>\n";
-		$str .= item_filter($items, qr/^m/);
+		$str .= item_filter($apikey, $items, qr/^m/);
 		$str .= "</p>\n";
+	} else {
+		$str .= "Error retrieving guild from cache."
 	}
 
 	return $str;
@@ -158,7 +231,7 @@ get '/:apikey/inventory/mats' => sub {
 
 get '/:apikey/inventory/rp' => sub {
 	my $apikey = param('apikey');
-	my ($error, $guild) = get_guild($apikey);
+	my $guild = get_guild($apikey);
 
 	my $str = ""
 		. $HEADER
@@ -173,23 +246,21 @@ get '/:apikey/inventory/rp' => sub {
 		. "</ul>\n"
 	;
 
-	if ($error) {
-		$str .= dump_pre($error)
-	} else {
+	if ($guild) {
 		my $items = $guild->room;
 		$str .= "<p>\n";
-		$str .= item_filter($items, qr/^rp/);
+		$str .= item_filter($apikey, $items, qr/^rp/);
 		$str .= "</p>\n";
+	} else {
+		$str .= "Error retrieving guild from cache."
 	}
 
 	return $str;
 };
 
-dance;
-
 
 sub item_filter {
-	my ($list_ref, $filter_regex) = @_;
+	my ($apikey, $list_ref, $filter_regex) = @_;
 
 	my @res =
 		sort { $a->sheet cmp $b->sheet }
@@ -199,7 +270,7 @@ sub item_filter {
 
 	for (@res) {
 		my $title = $_->sheet;
-		my $uri   = $client->item_icon($_);
+		my $uri   = "http://127.0.0.1:3000/$CACHE/$apikey/" . sheet_to_name($_);
 
 		$str .= "<img src='$uri' alt='$title' title='$title'>\n";
 	}
@@ -207,7 +278,14 @@ sub item_filter {
 	return $str;
 }
 
+sub sheet_to_name {
+	my ($item) = @_;
+	return $item->slot . ".png";
+}
+
 sub dump_pre {
 	my ($var) = @_;
 	my $str = "<pre>" . Dumper($var) . "</pre>";
 }
+
+1;
