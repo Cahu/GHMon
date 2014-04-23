@@ -61,61 +61,127 @@ my $client = RyzomAPI->new();
 	}
 }
 
-
 get '/:apikey' => sub {
 	my $apikey = param('apikey');
-
-	my ($error, $guild) = get_guild($apikey);
 
 	my $str = ""
 		. $HEADER
 		. "<h2>Home</h2>\n"
+		. "<ul>\n"
+		. "<li><a href='/$apikey/inventory'>GH's inventory</a></li>\n"
+		. "</ul>\n"
+		. $FOOTER
 	;
 
-	if ($error) {
-		$str .= dump_pre($error)
-	}
-
-	else {
-		$str .= ""
-			. "<ul>\n"
-			. "<li><a href='/$apikey/inventory'>GH's inventory</a></li>\n"
-			. "</ul>\n"
-		;
-	}
-
-	$str .= $FOOTER;
-	
 	return $str;
 };
 
 get '/:apikey/inventory' => sub {
 	my $apikey = param('apikey');
 
+	my $str = ""
+		. $HEADER
+		. "<h2>"
+		.    "<a href='/$apikey'>Home</a> > "
+		.    "Inventory"
+		. "</h2>\n"
+		. "<ul>\n"
+		. "<li><a href='/$apikey/inventory/items'>Items</a></li>\n"
+		. "<li><a href='/$apikey/inventory/mats'>Mats</a></li>\n"
+		. "<li><a href='/$apikey/inventory/rp'>RP Items</a></li>\n"
+		. "</ul>\n"
+	;
+
+
+	$str .= $FOOTER;
+	
+	return $str;
+};
+
+get '/:apikey/inventory/items' => sub {
+	my $apikey = param('apikey');
 	my ($error, $guild) = get_guild($apikey);
 
 	my $str = ""
 		. $HEADER
-		. "<h2><a href='/$apikey'>Home</a> > Inventory</h2>\n"
+		. "<h2>"
+		.    "<a href='/$apikey'>Home</a> > "
+		.    "<a href='/$apikey/inventory'>Inventory</a> > "
+		.    "Items"
+		. "</h2>\n"
+		. "<ul>\n"
+		. "<li><a href='/$apikey/inventory/mats'>Mats</a></li>\n"
+		. "<li><a href='/$apikey/inventory/rp'>RP Items</a></li>\n"
+		. "</ul>\n"
 	;
 
 	if ($error) {
 		$str .= dump_pre($error)
-	}
-
-	else {
+	} else {
 		my $items = $guild->room;
-		$str .= "<p>";
-		for (sort { $a->sheet cmp $b->sheet } @$items) {
-			my $title = $_->sheet;
-			my $url   = $client->item_icon($_);
-			$str .= "<img src='$url' alt='icon' title='$title'>\n";
-		}
-		$str .= "</p>";
+		$str .= "<p>\n";
+		$str .= item_filter($items, qr/^i/);
+		$str .= "</p>\n";
 	}
 
-	$str .= $FOOTER;
-	
+	return $str;
+};
+
+get '/:apikey/inventory/mats' => sub {
+	my $apikey = param('apikey');
+	my ($error, $guild) = get_guild($apikey);
+
+	my $str = ""
+		. $HEADER
+		. "<h2>"
+		.    "<a href='/$apikey'>Home</a> > "
+		.    "<a href='/$apikey/inventory'>Inventory</a> > "
+		.    "Mats"
+		. "</h2>\n"
+		. "<ul>\n"
+		. "<li><a href='/$apikey/inventory/items'>Items</a></li>\n"
+		. "<li><a href='/$apikey/inventory/rp'>RP Items</a></li>\n"
+		. "</ul>\n"
+	;
+
+	if ($error) {
+		$str .= dump_pre($error)
+	} else {
+		my $items = $guild->room;
+		$str .= "<p>\n";
+		$str .= item_filter($items, qr/^m/);
+		$str .= "</p>\n";
+	}
+
+	return $str;
+};
+
+get '/:apikey/inventory/rp' => sub {
+	my $apikey = param('apikey');
+	my ($error, $guild) = get_guild($apikey);
+
+	my $str = ""
+		. $HEADER
+		. "<h2>"
+		.    "<a href='/$apikey'>Home</a> > "
+		.    "<a href='/$apikey/inventory'>Inventory</a> > "
+		.    "RP Items"
+		. "</h2>\n"
+		. "<ul>\n"
+		. "<li><a href='/$apikey/inventory/items'>Items</a></li>\n"
+		. "<li><a href='/$apikey/inventory/mats'>Mats</a></li>\n"
+		. "</ul>\n"
+	;
+
+	if ($error) {
+		$str .= dump_pre($error)
+	} else {
+		my $items = $guild->room;
+		$str .= "<p>\n";
+		$str .= item_filter($items, qr/^rp/);
+		$str .= "</p>\n";
+	}
+
 	return $str;
 };
 
