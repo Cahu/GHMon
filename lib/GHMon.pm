@@ -9,6 +9,8 @@ use LWP::Simple qw(!get);
 use Data::Dumper;
 
 
+our $VERSION = 0.1;
+
 my $TITLE = "GHMon";
 my $CACHE = "cache";
 
