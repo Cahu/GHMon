@@ -29,11 +29,6 @@ my $FOOTER = <<HTML;
 HTML
 
 
-set 'logger'       => 'console';
-set 'log'          => 'debug';
-set 'show_errors'  => 1;
-set 'startup_info' => 1;
-set 'warnings'     => 1;
 
 my $client = RyzomAPI->new();
 
