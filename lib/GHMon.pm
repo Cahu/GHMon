@@ -5,6 +5,7 @@ use Dancer::Logger::Console;
 
 use RyzomAPI;
 use LWP::Simple qw(!get);
+use File::Path  qw(make_path);
 
 use Data::Dumper;
 
@@ -49,9 +50,9 @@ my $client = RyzomAPI->new();
 
 			my $cached_guild = $cache{$apikey};
 
-			if (!$cached_guild || $cached_guild->cached_until < $tick) {
+			if ($cached_guild->cached_until < $tick) {
 				info "Refreshing cache for key: $apikey";
-				$guild = refresh_cache($apikey);
+				$guild = init_cache($apikey);
 
 				if ($guild) {
 					$cache{$apikey} = $guild;
@@ -69,7 +70,7 @@ my $client = RyzomAPI->new();
 
 		else {
 			info "Initializing cache for key: $apikey";
-			$guild = refresh_cache($apikey);
+			$guild = init_cache($apikey);
 
 			if ($guild) {
 				$cache{$apikey} = $guild;
@@ -79,11 +80,11 @@ my $client = RyzomAPI->new();
 			}
 		}
 
-
 		return $guild;
 	}
 
-	sub refresh_cache {
+
+	sub init_cache {
 		my ($apikey) = @_;
 
 		my ($error, $guild) = $client->guild($apikey);
@@ -92,7 +93,7 @@ my $client = RyzomAPI->new();
 			my $dir = "public/$CACHE/$apikey";
 
 			unless (-d $dir) {
-				unless (mkdir $dir) {
+				unless (make_path $dir) {
 					warn "Couldn't create cache dir for key $apikey";
 					return undef;
 				}
@@ -103,31 +104,32 @@ my $client = RyzomAPI->new();
 				return undef;
 			}
 
-			for my $item (@{ $guild->room }) {
-				;
-				#getstore(
-				#	$client->item_icon($item),
-				#	$dir . "/" . sheet_to_name($item)
-				#);
-			}
-		}
-		
-		else {
-			warning Dumper($guild);
+			dl_images($dir, @{ $guild->room });
+			return $guild;
 		}
 
-		return $guild;
+		else {
+			warning $error;
+			return undef;
+		}
 	}
 
-}
+	sub dl_images {
+		my $dir = shift;
 
+		for my $item (@_) {
+			my $url   = $client->item_icon($item);
+			my $fname = url_to_name($url);
 
-unless (-d $CACHE) {
-	mkdir $CACHE or die "Can't create cache dir: $!";
-}
+			if (-r "$dir/$fname") {
+				info "$fname already in cache: skipping";
+				next;
+			}
 
-unless (-r $CACHE and -w $CACHE) {
-	die "Can't access cache dir";
+			info "Downloading '$url' to '$dir/$fname'";
+			getstore($url, "$dir/$fname");
+		}
+	}
 }
 
 
@@ -278,7 +280,8 @@ sub item_filter {
 
 	for (@res) {
 		my $title = $_->sheet;
-		my $uri   = "http://$host/$CACHE/$apikey/" . sheet_to_name($_);
+		my $tar   = $client->item_icon($_);
+		my $uri   = "http://$host/$CACHE/$apikey/" . url_to_name($tar);
 
 		$str .= "<img src='$uri' alt='$title' title='$title'>\n";
 	}
@@ -286,10 +289,21 @@ sub item_filter {
 	return $str;
 }
 
-sub sheet_to_name {
-	my ($item) = @_;
-	return $item->slot . ".png";
+
+sub url_to_name {
+	my ($url) = @_;
+
+	if ($url =~ /.*sheetid=(.*)/) {
+		my $fname = $1;
+		$fname =~ tr/&/_/;
+		$fname =~ s/=//g;
+		$fname .= ".png";
+		return $fname;
+	}
+
+	return undef;
 }
+
 
 sub dump_pre {
 	my ($var) = @_;
