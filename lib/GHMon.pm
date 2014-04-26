@@ -291,8 +291,7 @@ get '/:apikey/inventory/:slot' => sub {
 		. $HEADER
 		. "<h2>"
 		.    "<a href='/$apikey'>Home</a> > "
-		.    "<a href='/$apikey/inventory'>Inventory</a> > "
-		.    "RP Items"
+		.    "<a href='/$apikey/inventory'>Inventory</a>"
 		. "</h2>\n"
 		. "<ul>\n"
 		. "<li><a href='/$apikey/inventory/items'>Items</a></li>\n"
