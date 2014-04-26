@@ -1,5 +1,6 @@
 package GHMon;
 
+use Carp;
 use Dancer qw(:syntax);
 use Dancer::Logger::Console;
 
@@ -31,6 +32,14 @@ my $FOOTER = <<HTML;
 </html> 
 HTML
 
+
+$SIG{__WARN__} = sub {
+	carp shift;
+};
+
+$SIG{__DIE__} = sub {
+	croak shift;
+};
 
 
 my $client = RyzomAPI->new();
@@ -104,7 +113,7 @@ my $client = RyzomAPI->new();
 				return undef;
 			}
 
-			dl_images($dir, @{ $guild->room });
+			dl_images($dir, grep { defined } @{ $guild->room });
 			return $guild;
 		}
 
@@ -274,7 +283,7 @@ sub item_filter {
 
 	my @res =
 		sort { $a->sheet cmp $b->sheet }
-		grep { $_->sheet =~ /$filter_regex/ } @$list_ref;
+		grep { defined $_ and $_->sheet =~ /$filter_regex/ } @$list_ref;
 
 	my $str = "";
 
