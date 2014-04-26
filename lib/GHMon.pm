@@ -11,7 +11,7 @@ use File::Path  qw(make_path);
 use Data::Dumper;
 
 
-our $VERSION = 0.1;
+our $VERSION = 0.2;
 
 my $TITLE = "GHMon";
 my $CACHE = "cache";
@@ -278,6 +278,45 @@ get '/:apikey/inventory/rp' => sub {
 };
 
 
+get '/:apikey/inventory/:slot' => sub {
+	my $slot   = param('slot');
+	my $apikey = param('apikey');
+	my $guild  = get_guild($apikey);
+
+	unless ($slot =~ /^\d+$/) {
+		forward "/$apikey/inventory";
+	}
+
+	my $str = ""
+		. $HEADER
+		. "<h2>"
+		.    "<a href='/$apikey'>Home</a> > "
+		.    "<a href='/$apikey/inventory'>Inventory</a> > "
+		.    "RP Items"
+		. "</h2>\n"
+		. "<ul>\n"
+		. "<li><a href='/$apikey/inventory/items'>Items</a></li>\n"
+		. "<li><a href='/$apikey/inventory/mats'>Mats</a></li>\n"
+		. "<li><a href='/$apikey/inventory/rp'>RP Items</a></li>\n"
+		. "</ul>\n"
+	;
+
+	if ($guild) {
+		my $items = $guild->room;
+		unless ($slot <= $#$items and defined $items->[$slot]) {
+			forward "/$apikey/inventory";
+		}
+		$str .= dump_pre($items->[$slot]);
+	}
+
+	else {
+		$str .= "Error retrieving guild from cache."
+	}
+
+	return $str;
+};
+
+
 sub item_filter {
 	my ($host, $apikey, $list_ref, $filter_regex) = @_;
 
@@ -288,11 +327,14 @@ sub item_filter {
 	my $str = "";
 
 	for (@res) {
+		my $slot  = $_->slot;
 		my $title = $_->sheet;
 		my $tar   = $client->item_icon($_);
 		my $uri   = "http://$host/$CACHE/$apikey/" . url_to_name($tar);
 
-		$str .= "<img src='$uri' alt='$title' title='$title'>\n";
+		$str .= "<a href='/$apikey/inventory/$slot'>"
+			.   "<img src='$uri' alt='$title' title='$title'>"
+			.   "</a>\n";
 	}
 
 	return $str;
