@@ -10,7 +10,7 @@ use File::Path  qw(make_path);
 use Data::Dumper;
 
 
-our $VERSION = 0.1;
+our $VERSION = 0.2;
 
 my $TITLE = "GHMon";
 my $CACHE = "cache";
