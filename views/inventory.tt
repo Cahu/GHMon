@@ -1,0 +1,15 @@
+<a href="/<% apikey %>">Home</a> <b>|</b> <a href="/<% apikey %>/inventory">Inventory</a>
+<br>
+<br>
+Inventory <b>></b>
+<a href="/<% apikey %>/inventory/mats">Mats</a> <b>|</b>
+<a href="/<% apikey %>/inventory/items">Items</a> <b>|</b>
+<a href="/<% apikey %>/inventory/rp">RP Items</a>
+<p>
+<% IF error %>
+	<% error %>
+<% END %>
+<% FOREACH i IN itemlist %>
+<a href="/<% apikey %>/inventory/<% i.slot %>"><img src="<% request.base%><% vars.cache %>/<% apikey %>/<% i.file %>" alt="<% i.title %>" title="<% i.title %>"></a>
+<% END %>
+</p>

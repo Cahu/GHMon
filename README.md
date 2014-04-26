@@ -9,6 +9,7 @@ Monitor a guild hall's inventory in the Ryzom game.
 This program requires these other modules and libraries:
 
 	Dancer
+	Template
 	RyzomAPI
 
 

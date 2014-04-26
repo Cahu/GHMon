@@ -18,6 +18,7 @@ WriteMakefile(
 	PREREQ_PM => {
 		'Test::More' => 0,
 		'YAML'       => 0,
+		'Template'   => 0,
 		'Dancer'     => 1.3123,
 		'RyzomAPI'   => 0.3,
 	},

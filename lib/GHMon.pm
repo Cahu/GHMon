@@ -17,28 +17,16 @@ my $TITLE = "GHMon";
 my $CACHE = "cache";
 
 
-my $HEADER = <<HTML;
-<!DOCTYPE html>
-<html>
-<head>
-<title>$TITLE</title>
-</head>
-<body>
-<h1>GHMon!</h1>
-HTML
-
-my $FOOTER = <<HTML;
-</body>
-</html> 
-HTML
-
-
 $SIG{__WARN__} = sub {
 	carp shift;
 };
 
 $SIG{__DIE__} = sub {
 	croak shift;
+};
+
+hook before => sub {
+	var title => $TITLE;
 };
 
 
@@ -142,13 +130,15 @@ my $client = RyzomAPI->new();
 }
 
 
-get '/' => sub {
-	my $str = ""
-		. $HEADER
-		. "Usage: http://server.bla.bla/[guild api key]"
-		. $FOOTER
-	;
+set layout => 'main.tt';
 
+hook before => sub {
+	var cache => $CACHE,
+};
+
+
+get '/' => sub {
+	my $str = "Usage: http://server.bla.bla/[guild api key]";
 	return $str;
 };
 
@@ -157,12 +147,10 @@ get '/:apikey' => sub {
 	my $apikey = param('apikey');
 
 	my $str = ""
-		. $HEADER
 		. "<h2>Home</h2>\n"
 		. "<ul>\n"
 		. "<li><a href='/$apikey/inventory'>GH's inventory</a></li>\n"
 		. "</ul>\n"
-		. $FOOTER
 	;
 
 	return $str;
@@ -171,110 +159,64 @@ get '/:apikey' => sub {
 get '/:apikey/inventory' => sub {
 	my $apikey = param('apikey');
 
-	my $str = ""
-		. $HEADER
-		. "<h2>"
-		.    "<a href='/$apikey'>Home</a> > "
-		.    "Inventory"
-		. "</h2>\n"
-		. "<ul>\n"
-		. "<li><a href='/$apikey/inventory/items'>Items</a></li>\n"
-		. "<li><a href='/$apikey/inventory/mats'>Mats</a></li>\n"
-		. "<li><a href='/$apikey/inventory/rp'>RP Items</a></li>\n"
-		. "</ul>\n"
-	;
-
-
-	$str .= $FOOTER;
-	
-	return $str;
+	template 'inventory.tt', {
+		apikey   => $apikey,
+		itemlist => [],
+	};
 };
 
 get '/:apikey/inventory/items' => sub {
 	my $apikey = param('apikey');
 	my $guild = get_guild($apikey);
 
-	my $str = ""
-		. $HEADER
-		. "<h2>"
-		.    "<a href='/$apikey'>Home</a> > "
-		.    "<a href='/$apikey/inventory'>Inventory</a> > "
-		.    "Items"
-		. "</h2>\n"
-		. "<ul>\n"
-		. "<li><a href='/$apikey/inventory/mats'>Mats</a></li>\n"
-		. "<li><a href='/$apikey/inventory/rp'>RP Items</a></li>\n"
-		. "</ul>\n"
-	;
-
 	if ($guild) {
 		my $items = $guild->room;
-		$str .= "<p>\n";
-		$str .= item_filter(request->host, $apikey, $items, qr/^i/);
-		$str .= "</p>\n";
+		template 'inventory.tt', {
+			apikey   => $apikey,
+			itemlist => item_filter(request->host, $apikey, $items, qr/^i/),
+		};
 	} else {
-		$str .= "Error retrieving guild from cache."
+		template 'inventory.tt', {
+			apikey => $apikey,
+			error  => "Error retrieving guild from cache.",
+		};
 	}
-
-	return $str;
 };
 
 get '/:apikey/inventory/mats' => sub {
 	my $apikey = param('apikey');
 	my $guild = get_guild($apikey);
 
-	my $str = ""
-		. $HEADER
-		. "<h2>"
-		.    "<a href='/$apikey'>Home</a> > "
-		.    "<a href='/$apikey/inventory'>Inventory</a> > "
-		.    "Mats"
-		. "</h2>\n"
-		. "<ul>\n"
-		. "<li><a href='/$apikey/inventory/items'>Items</a></li>\n"
-		. "<li><a href='/$apikey/inventory/rp'>RP Items</a></li>\n"
-		. "</ul>\n"
-	;
-
 	if ($guild) {
 		my $items = $guild->room;
-		$str .= "<p>\n";
-		$str .= item_filter(request->host, $apikey, $items, qr/^m/);
-		$str .= "</p>\n";
+		template 'inventory.tt', {
+			apikey   => $apikey,
+			itemlist => item_filter(request->host, $apikey, $items, qr/^m/),
+		};
 	} else {
-		$str .= "Error retrieving guild from cache."
+		template 'inventory.tt', {
+			apikey => $apikey,
+			error  => "Error retrieving guild from cache.",
+		};
 	}
-
-	return $str;
 };
 
 get '/:apikey/inventory/rp' => sub {
 	my $apikey = param('apikey');
 	my $guild = get_guild($apikey);
 
-	my $str = ""
-		. $HEADER
-		. "<h2>"
-		.    "<a href='/$apikey'>Home</a> > "
-		.    "<a href='/$apikey/inventory'>Inventory</a> > "
-		.    "RP Items"
-		. "</h2>\n"
-		. "<ul>\n"
-		. "<li><a href='/$apikey/inventory/items'>Items</a></li>\n"
-		. "<li><a href='/$apikey/inventory/mats'>Mats</a></li>\n"
-		. "</ul>\n"
-	;
-
 	if ($guild) {
 		my $items = $guild->room;
-		$str .= "<p>\n";
-		$str .= item_filter(request->host, $apikey, $items, qr/^rp/);
-		$str .= "</p>\n";
+		template 'inventory.tt', {
+			apikey   => $apikey,
+			itemlist => item_filter(request->host, $apikey, $items, qr/^rp/),
+		};
 	} else {
-		$str .= "Error retrieving guild from cache."
+		template 'inventory.tt', {
+			apikey => $apikey,
+			error  => "Error retrieving guild from cache.",
+		};
 	}
-
-	return $str;
 };
 
 
@@ -287,56 +229,83 @@ get '/:apikey/inventory/:slot' => sub {
 		forward "/$apikey/inventory";
 	}
 
-	my $str = ""
-		. $HEADER
-		. "<h2>"
-		.    "<a href='/$apikey'>Home</a> > "
-		.    "<a href='/$apikey/inventory'>Inventory</a>"
-		. "</h2>\n"
-		. "<ul>\n"
-		. "<li><a href='/$apikey/inventory/items'>Items</a></li>\n"
-		. "<li><a href='/$apikey/inventory/mats'>Mats</a></li>\n"
-		. "<li><a href='/$apikey/inventory/rp'>RP Items</a></li>\n"
-		. "</ul>\n"
-	;
-
 	if ($guild) {
 		my $items = $guild->room;
 		unless ($slot <= $#$items and defined $items->[$slot]) {
 			forward "/$apikey/inventory";
 		}
-		$str .= dump_pre($items->[$slot]);
+
+		my $item = $items->[$slot];
+		template 'itemdetails.tt', {
+			%{ template_item_object($item) },
+			details => template_item_details($item), #dump_pre($item),
+			apikey  => $apikey,
+		};
 	}
 
 	else {
-		$str .= "Error retrieving guild from cache."
+		template 'itemdetails.tt', {
+			apikey => $apikey,
+			error  => "Error retrieving guild from cache.",
+		};
 	}
-
-	return $str;
 };
 
 
 sub item_filter {
 	my ($host, $apikey, $list_ref, $filter_regex) = @_;
 
-	my @res =
+	my @filtered =
 		sort { $a->sheet cmp $b->sheet }
 		grep { defined $_ and $_->sheet =~ /$filter_regex/ } @$list_ref;
-
-	my $str = "";
-
-	for (@res) {
-		my $slot  = $_->slot;
-		my $title = $_->sheet;
-		my $tar   = $client->item_icon($_);
-		my $uri   = "http://$host/$CACHE/$apikey/" . url_to_name($tar);
-
-		$str .= "<a href='/$apikey/inventory/$slot'>"
-			.   "<img src='$uri' alt='$title' title='$title'>"
-			.   "</a>\n";
+	
+	my @list;
+	for (@filtered) {
+		push @list, template_item_object($_);
 	}
 
-	return $str;
+	return \@list;
+}
+
+
+sub template_item_object {
+	my $it = shift;
+	my $tar = $client->item_icon($it);
+
+	return {
+		slot  => $it->slot,
+		title => $it->sheet,
+		file  => url_to_name($tar),
+	};
+}
+
+
+sub template_item_details {
+	my $it = shift;
+
+	if ($it->sheet =~ /^i/) {
+		# dealing with item
+		return [
+			{ name => 'HP'                 , value => $it->hp                                       },
+			{ name => 'Weight'             , value => $it->craftparameters->{weight}                },
+			{ name => 'Protection factor'  , value => $it->craftparameters->{protectionfactor}      },
+			{ name => 'Max vs. smash'      , value => $it->craftparameters->{maxbluntprotection}    },
+			{ name => 'Max vs. slash'      , value => $it->craftparameters->{maxslashingprotection} },
+			{ name => 'Max vs. pierce'     , value => $it->craftparameters->{maxpiercingprotection} },
+			{ name => 'Parry modifier'     , value => $it->craftparameters->{parrymodifier}         },
+			{ name => 'Dodge modifier'     , value => $it->craftparameters->{dodgemodifier}         },
+		];
+	}
+
+	elsif ($it->sheet =~ /^rp/) {
+		# dealing with rp item
+		return [];
+	}
+
+	elsif ($it->sheet =~ /^m/) {
+		# dealing with mats
+		return [];
+	}
 }
 
 

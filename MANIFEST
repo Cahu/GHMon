@@ -4,8 +4,6 @@ lib/GHMon.pm
 Makefile.PL
 MANIFEST
 MANIFEST.SKIP
-MYMETA.json
-MYMETA.yml
 public/404.html
 public/500.html
 public/css/error.css
@@ -13,3 +11,6 @@ public/css/style.css
 README.md
 t/001_base.t
 t/002_index_route.t
+views/inventory.tt
+views/itemdetails.tt
+views/layouts/main.tt

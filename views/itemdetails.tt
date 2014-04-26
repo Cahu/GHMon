@@ -1,0 +1,16 @@
+<a href="/<% apikey %>">Home</a> <b>|</b> <a href="/<% apikey %>/inventory">Inventory</a>
+<br>
+<br>
+Item detail <b>></b> slot #<% slot %>
+<% IF error %>
+	<% error %>
+<% END %>
+<br>
+<br>
+<img src="<% request.base%><% vars.cache %>/<% apikey %>/<% file %>" alt="<% title %>">
+<br>
+<br>
+<% FOR d in details %>
+<% d.name %> : <% d.value %><br>
+<% END %>
+
