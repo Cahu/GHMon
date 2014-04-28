@@ -165,89 +165,60 @@ get '/:apikey/inventory' => sub {
 	};
 };
 
-get '/:apikey/inventory/items' => sub {
-	my $apikey = param('apikey');
-	my $guild = get_guild($apikey);
-
-	if ($guild) {
-		my $items = $guild->room;
-		template 'inventory.tt', {
-			apikey   => $apikey,
-			itemlist => item_filter(request->host, $apikey, $items, qr/^i/),
-		};
-	} else {
-		template 'inventory.tt', {
-			apikey => $apikey,
-			error  => "Error retrieving guild from cache.",
-		};
-	}
-};
-
-get '/:apikey/inventory/mats' => sub {
-	my $apikey = param('apikey');
-	my $guild = get_guild($apikey);
-
-	if ($guild) {
-		my $items = $guild->room;
-		template 'inventory.tt', {
-			apikey   => $apikey,
-			itemlist => item_filter(request->host, $apikey, $items, qr/^m/),
-		};
-	} else {
-		template 'inventory.tt', {
-			apikey => $apikey,
-			error  => "Error retrieving guild from cache.",
-		};
-	}
-};
-
-get '/:apikey/inventory/rp' => sub {
-	my $apikey = param('apikey');
-	my $guild = get_guild($apikey);
-
-	if ($guild) {
-		my $items = $guild->room;
-		template 'inventory.tt', {
-			apikey   => $apikey,
-			itemlist => item_filter(request->host, $apikey, $items, qr/^rp/),
-		};
-	} else {
-		template 'inventory.tt', {
-			apikey => $apikey,
-			error  => "Error retrieving guild from cache.",
-		};
-	}
-};
-
-
-get '/:apikey/inventory/:slot' => sub {
-	my $slot   = param('slot');
+get '/:apikey/inventory/:what' => sub {
+	my $what   = param('what');
 	my $apikey = param('apikey');
 	my $guild  = get_guild($apikey);
 
-	unless ($slot =~ /^\d+$/) {
-		forward "/$apikey/inventory";
-	}
-
-	if ($guild) {
-		my $items = $guild->room;
-		unless ($slot <= $#$items and defined $items->[$slot]) {
-			forward "/$apikey/inventory";
-		}
-
-		my $item = $items->[$slot];
-		template 'itemdetails.tt', {
-			%{ template_item_object($item) },
-			details => template_item_details($item), #dump_pre($item),
-			apikey  => $apikey,
+	if (! $guild) {
+		template 'inventory.tt', {
+			apikey => $apikey,
+			error  => "Error retrieving guild from cache.",
 		};
 	}
 
 	else {
-		template 'itemdetails.tt', {
-			apikey => $apikey,
-			error  => "Error retrieving guild from cache.",
-		};
+		my $items = $guild->room;
+
+		if ($what =~ /^\d+$/) {
+			my $slot = $what;
+
+			unless ($slot <= $#$items and defined $items->[$slot]) {
+				forward "/$apikey/inventory";
+			}
+
+			my $item = $items->[$slot];
+			template 'itemdetails.tt', {
+				%{ template_item_object($item) },
+				details => template_item_details($item), #dump_pre($item),
+				apikey  => $apikey,
+			};
+		}
+
+		elsif ($what eq "mats") {
+			template 'inventory.tt', {
+				apikey   => $apikey,
+				itemlist => item_filter(request->host, $apikey, $items, qr/^m/),
+			};
+		}
+
+		elsif ($what eq "items") {
+			template 'inventory.tt', {
+				apikey   => $apikey,
+				itemlist => item_filter(request->host, $apikey, $items, qr/^i/),
+			};
+		}
+
+		elsif ($what eq "rp") {
+			template 'inventory.tt', {
+				apikey   => $apikey,
+				itemlist => item_filter(request->host, $apikey, $items, qr/^rp/),
+			};
+		}
+
+		else {
+			forward "/$apikey/inventory";
+		}
 	}
 };
 
