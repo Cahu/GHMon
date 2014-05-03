@@ -11,7 +11,7 @@ use File::Path  qw(make_path);
 use Data::Dumper;
 
 
-our $VERSION = 0.3.1;
+our $VERSION = 0.4;
 
 my $TITLE = "GHMon";
 my $CACHE = "cache";
@@ -36,7 +36,7 @@ my $client = RyzomAPI->new();
 sub get_guild {
 	my ($apikey) = @_;
 
-	my ($error, $updated, $guild) = $client->guild($apikey);
+	my ($error, $guild, $updated) = $client->guild($apikey);
 
 	info "Server has updated guild info, synchronizing cache..." if ($updated);
 
@@ -47,15 +47,36 @@ sub get_guild {
 
 	if ($updated) {
 		info "Updating image cache for key $apikey";
-		update_img_cache($guild);
+		update_img_cache($apikey, $guild->room);
 	}
 
 	return $guild;
 }
 
+
+sub get_character {
+	my ($apikey) = @_;
+
+	my ($error, $character, $updated) = $client->character($apikey);
+
+	info "Server has updated character info, synchronizing cache..." if ($updated);
+
+	if ($error) {
+		warning "Client returned error '$error'";
+		return undef;
+	}
+
+	if ($updated) {
+		info "Updating image cache for key $apikey";
+		update_img_cache($apikey, $character->room);
+	}
+
+	return $character;
+}
+
+
 sub update_img_cache {
-	my ($guild) = @_;
-	my $apikey = $guild->apikey;
+	my ($apikey, $room) = @_;
 
 	my $dir = "public/$CACHE/$apikey";
 
@@ -75,7 +96,7 @@ sub update_img_cache {
 	my %oldfiles;
 	$oldfiles{$_} = 0 for (glob("$dir/*.png"));
 
-	for my $item (grep { defined } @{ $guild->room }) {
+	for my $item (grep { defined } @$room) {
 		my $url   = $client->item_icon($item);
 		my $fname = url_to_name($url);
 		my $path  = "$dir/$fname";
@@ -120,7 +141,7 @@ get '/:apikey' => sub {
 	my $str = ""
 		. "<h2>Home</h2>\n"
 		. "<ul>\n"
-		. "<li><a href='/$apikey/inventory'>GH's inventory</a></li>\n"
+		. "<li><a href='/$apikey/inventory'>Inventory</a></li>\n"
 		. "</ul>\n"
 	;
 
@@ -139,18 +160,35 @@ get '/:apikey/inventory' => sub {
 get '/:apikey/inventory/:what' => sub {
 	my $what   = param('what');
 	my $apikey = param('apikey');
-	my $guild  = get_guild($apikey);
 
-	if (! $guild) {
+	my ($thing, $items);
+
+	if ($apikey =~ /^g/) {
+		$thing = get_guild($apikey);
+		$items = $thing->room if ($thing);
+	}
+
+	elsif ($apikey =~ /^c/) {
+		$thing = get_character($apikey);
+		$items = $thing->room if ($thing);
+	}
+
+	else {
+		warning "Invalid key: must start by 'g' or 'c'";
 		template 'inventory.tt', {
 			apikey => $apikey,
-			error  => "Error retrieving guild from cache.",
+			error  => "Invalid key: must start by 'g' or 'c'",
+		};
+	}
+
+	if (! $items) {
+		template 'inventory.tt', {
+			apikey => $apikey,
+			error  => "Couldn't retrieve any information for key $apikey",
 		};
 	}
 
 	else {
-		my $items = $guild->room;
-
 		if ($what =~ /^\d+$/) {
 			my $slot = $what;
 
