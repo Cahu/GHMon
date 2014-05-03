@@ -11,7 +11,7 @@ use File::Path  qw(make_path);
 use Data::Dumper;
 
 
-our $VERSION = 0.3;
+our $VERSION = 0.3.1;
 
 my $TITLE = "GHMon";
 my $CACHE = "cache";
@@ -33,98 +33,69 @@ hook before => sub {
 my $client = RyzomAPI->new();
 
 
-{
-	my %cache;
+sub get_guild {
+	my ($apikey) = @_;
 
-	sub get_guild {
-		my ($apikey) = @_;
+	my ($error, $updated, $guild) = $client->guild($apikey);
 
-		my $guild;
+	info "Server has updated guild info, synchronizing cache..." if ($updated);
 
-		if ($cache{$apikey}) {
-			my $time = $client->time;
-			my $tick = $time->server_tick;
-
-			my $cached_guild = $cache{$apikey};
-
-			if ($cached_guild->cached_until < $tick) {
-				info "Refreshing cache for key: $apikey";
-				$guild = init_cache($apikey);
-
-				if ($guild) {
-					$cache{$apikey} = $guild;
-					info "Cache update for key $apikey done";
-				} else {
-					$cache{$apikey} = undef;
-					warning "Cache update for key $apikey failed";
-				}
-			}
-			
-			else {
-				$guild = $cached_guild;
-			}
-		}
-
-		else {
-			info "Initializing cache for key: $apikey";
-			$guild = init_cache($apikey);
-
-			if ($guild) {
-				$cache{$apikey} = $guild;
-				info "Cache creation for key $apikey done";
-			} else {
-				warning "Cache creation for key $apikey failed";
-			}
-		}
-
-		return $guild;
+	if ($error) {
+		warning "Client returned error '$error'";
+		return undef;
 	}
 
-
-	sub init_cache {
-		my ($apikey) = @_;
-
-		my ($error, $guild) = $client->guild($apikey);
-
-		if (! $error) {
-			my $dir = "public/$CACHE/$apikey";
-
-			unless (-d $dir) {
-				unless (make_path $dir) {
-					warn "Couldn't create cache dir for key $apikey";
-					return undef;
-				}
-			}
-
-			unless (-r $dir and -w $dir) {
-				warn "Couldn't access cache dir for key $apikey";
-				return undef;
-			}
-
-			dl_images($dir, grep { defined } @{ $guild->room });
-			return $guild;
-		}
-
-		else {
-			warning $error;
-			return undef;
-		}
+	if ($updated) {
+		info "Updating image cache for key $apikey";
+		update_img_cache($guild);
 	}
 
-	sub dl_images {
-		my $dir = shift;
+	return $guild;
+}
 
-		for my $item (@_) {
-			my $url   = $client->item_icon($item);
-			my $fname = url_to_name($url);
+sub update_img_cache {
+	my ($guild) = @_;
+	my $apikey = $guild->apikey;
 
-			if (-r "$dir/$fname") {
-				info "$fname already in cache: skipping";
-				next;
-			}
+	my $dir = "public/$CACHE/$apikey";
 
-			info "Downloading '$url' to '$dir/$fname'";
-			getstore($url, "$dir/$fname");
+	# make sure the cache dir exists
+	unless (-d $dir || make_path $dir) {
+		warn "Couldn't create cache dir for key $apikey";
+		return undef;
+	}
+
+	# verify dir permissions
+	unless (-r $dir and -w $dir) {
+		warn "Couldn't access cache dir for key $apikey";
+		return undef;
+	}
+
+	# get a list of images before the update
+	my %oldfiles;
+	$oldfiles{$_} = 0 for (glob("$dir/*.png"));
+
+	for my $item (grep { defined } @{ $guild->room }) {
+		my $url   = $client->item_icon($item);
+		my $fname = url_to_name($url);
+		my $path  = "$dir/$fname";
+
+		if (-r $path) {
+			info "$fname already in cache: skipping";
+			# notify that this old image is still valid and is to be kept
+			$oldfiles{$path} = 1;
+			next;
+		}
+
+		info "Downloading '$url' to '$path'";
+		getstore($url, $path);
+	}
+
+	# remove images that are not needed anymore
+	for my $path (keys %oldfiles) {
+		if ($oldfiles{$path} == 0) {
+			unlink $path;
+			info "$path is obsolete and has been removed";
 		}
 	}
 }
