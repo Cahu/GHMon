@@ -4,7 +4,6 @@
 	<title>GHMon</title>
 	</head>
     <body>
-	<h1>GHMon</h1>
     <% content %>
     </body>
 </html>

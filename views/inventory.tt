@@ -1,3 +1,4 @@
+<h1><% title %></h1>
 <a href="/<% apikey %>">Home</a> <b>|</b> <a href="/<% apikey %>/inventory">Inventory</a>
 <br>
 <br>

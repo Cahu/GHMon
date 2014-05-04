@@ -13,7 +13,6 @@ use Data::Dumper;
 
 our $VERSION = 0.4;
 
-my $TITLE = "GHMon";
 my $CACHE = "cache";
 
 
@@ -23,10 +22,6 @@ $SIG{__WARN__} = sub {
 
 $SIG{__DIE__} = sub {
 	croak shift;
-};
-
-hook before => sub {
-	var title => $TITLE;
 };
 
 
@@ -138,20 +133,29 @@ get '/' => sub {
 get '/:apikey' => sub {
 	my $apikey = param('apikey');
 
-	my $str = ""
-		. "<h2>Home</h2>\n"
-		. "<ul>\n"
-		. "<li><a href='/$apikey/inventory'>Inventory</a></li>\n"
-		. "</ul>\n"
-	;
-
-	return $str;
+	forward "/$apikey/inventory";
 };
 
 get '/:apikey/inventory' => sub {
 	my $apikey = param('apikey');
 
+	my $title;
+
+	if ($apikey =~ /^g/) {
+		$title = "Guild Hall";
+	}
+
+	elsif ($apikey =~ /^c/) {
+		$title = "Apartment";
+	}
+
+	else {
+		warning "Invalid key: must start by 'g' or 'c'";
+		$title = "Error";
+	}
+
 	template 'inventory.tt', {
+		title    => $title,
 		apikey   => $apikey,
 		itemlist => [],
 	};
@@ -161,14 +165,16 @@ get '/:apikey/inventory/:what' => sub {
 	my $what   = param('what');
 	my $apikey = param('apikey');
 
-	my ($thing, $items);
+	my ($thing, $items, $title);
 
 	if ($apikey =~ /^g/) {
+		$title = "Guild Hall";
 		$thing = get_guild($apikey);
 		$items = $thing->room if ($thing);
 	}
 
 	elsif ($apikey =~ /^c/) {
+		$title = "Apartment";
 		$thing = get_character($apikey);
 		$items = $thing->room if ($thing);
 	}
@@ -176,6 +182,7 @@ get '/:apikey/inventory/:what' => sub {
 	else {
 		warning "Invalid key: must start by 'g' or 'c'";
 		template 'inventory.tt', {
+			title  => "Error",
 			apikey => $apikey,
 			error  => "Invalid key: must start by 'g' or 'c'",
 		};
@@ -183,6 +190,7 @@ get '/:apikey/inventory/:what' => sub {
 
 	if (! $items) {
 		template 'inventory.tt', {
+			title  => "Error",
 			apikey => $apikey,
 			error  => "Couldn't retrieve any information for key $apikey",
 		};
@@ -206,6 +214,7 @@ get '/:apikey/inventory/:what' => sub {
 
 		elsif ($what eq "mats") {
 			template 'inventory.tt', {
+				title    => $title,
 				apikey   => $apikey,
 				itemlist => item_filter(request->host, $apikey, $items, qr/^m/),
 			};
@@ -213,6 +222,7 @@ get '/:apikey/inventory/:what' => sub {
 
 		elsif ($what eq "items") {
 			template 'inventory.tt', {
+				title    => $title,
 				apikey   => $apikey,
 				itemlist => item_filter(request->host, $apikey, $items, qr/^i/),
 			};
@@ -220,6 +230,7 @@ get '/:apikey/inventory/:what' => sub {
 
 		elsif ($what eq "rp") {
 			template 'inventory.tt', {
+				title    => $title,
 				apikey   => $apikey,
 				itemlist => item_filter(request->host, $apikey, $items, qr/^rp/),
 			};
