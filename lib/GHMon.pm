@@ -11,7 +11,7 @@ use File::Path  qw(make_path);
 use Data::Dumper;
 
 
-our $VERSION = 0.4;
+our $VERSION = 0.4.1;
 
 my $CACHE = "cache";
 
