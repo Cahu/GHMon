@@ -278,32 +278,6 @@ sub template_item_details {
 		# dealing with item
 		return [
 			{ name => 'raw data' , value => dump_pre($it) },
-		#	{ name => 'HP'                 , value => $it->hp                                             },
-		#	{ name{ name => 'Weight'             , value => $it->craftparameters->{weight}                      },
-		#	{ name{ name => 'Sap load'           , value => $it->craftparameters->{sapload}                     },
-		#	{ name{ name => 'Damage'             , value => $it->craftparameters->{dmg}                         },
-		#	{ name{ name => 'Speed'              , value => $it->craftparameters->{speed}                       },
-		#	{ name{ name => 'Protection factor'  , value => $it->craftparameters->{protectionfactor}            },
-		#	{ name{ name => 'Max vs. smash'      , value => $it->craftparameters->{maxbluntprotection}          },
-		#	{ name{ name => 'Max vs. slash'      , value => $it->craftparameters->{maxslashingprotection}       },
-		#	{ name{ name => 'Max vs. pierce'     , value => $it->craftparameters->{maxpiercingprotection}       },
-		#	{ name{ name => 'Parry modifier'     , value => $it->craftparameters->{parrymodifier}               },
-		#	{ name{ name => 'Dodge modifier'     , value => $it->craftparameters->{dodgemodifier}               },
-		#	{ name{ name => 'Adv. parry modifier', value => $it->craftparameters->{adversaryparrymodifier}      },
-		#	{ name{ name => 'Adv. dodge modifier', value => $it->craftparameters->{adversarydodgemodifier}      },
-		#	{ name{ name => 'HP buff'            , value => $it->craftparameters->{hpbuff}                      },
-		#	{ name{ name => 'Sap buff'           , value => $it->craftparameters->{sapbuff}                     },
-		#	{ name{ name => 'Stamina buff'       , value => $it->craftparameters->{staminabuff}                 },
-		#	{ name{ name => 'Focus buff'         , value => $it->craftparameters->{focusbuff}                   },
-		#	{ name{ name => 'Desert resistance'  , value => $it->craftparameters->{desertresistancefactor}      },
-		#	{ name{ name => 'Forest resistance'  , value => $it->craftparameters->{forestresistancefactor}      },
-		#	{ name{ name => 'Jungle resistance'  , value => $it->craftparameters->{jungleresistancefactor}      },
-		#	{ name{ name => 'Lakes resistance'   , value => $it->craftparameters->{lacusresistancefactor}       },
-		#	{ name{ name => 'PR resistance'      , value => $it->craftparameters->{primaryrootresistancefactor} },
-		#	{ name{ name => 'Protection 1'       , value => $it->craftparameters->{protection}                  },
-		#	{ name{ name => 'Protection 2'       , value => $it->craftparameters->{protection1}                 },
-		#	{ name{ name => 'Protection 3'       , value => $it->craftparameters->{protection2}                 },
-		#	{ name{ name => 'Protection 4'       , value => $it->craftparameters->{protection3}                 },
 		];
 	}
 
